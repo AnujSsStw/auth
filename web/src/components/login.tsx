@@ -1,26 +1,50 @@
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { authClient } from "@/lib/auth-client"; //import the auth client
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+
+import { z } from "zod";
+
+const loginSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters." }),
+});
+
+type LoginValues = z.infer<typeof loginSchema>;
 
 export function Login({
   setIsLogin,
 }: {
   setIsLogin: (login: boolean) => void;
 }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState("email");
+  const form = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-  async function handleSignIn() {
+  async function handleSignIn(values: LoginValues) {
     await authClient.signIn.email(
       {
-        email,
-        password,
+        email: values.email,
+        password: values.password,
       },
       {
         onRequest: () => {
@@ -31,7 +55,13 @@ export function Login({
           setLoading(false);
         },
         onError: (ctx) => {
-          alert(ctx.error.message);
+          // alert(ctx.error.message);
+          form.setError("email", {
+            message: ctx.error.message,
+          });
+          form.setError("password", {
+            message: ctx.error.message,
+          });
           setLoading(false);
         },
       }
@@ -60,48 +90,57 @@ export function Login({
           </p>
         </div>
 
-        <Tabs
-          defaultValue="email"
-          className="w-full"
-          onValueChange={(value) => {
-            setTab(value);
-          }}
-        >
+        <Tabs defaultValue="email" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="sso">SSO</TabsTrigger>
           </TabsList>
           <TabsContent value="email">
-            <Card className="p-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    id="email"
-                    placeholder="m@example.com"
-                    type="email"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    id="password"
-                    type="password"
-                  />
-                </div>
-                <Button
-                  onClick={handleSignIn}
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {loading ? "Loading..." : "Sign in with Email"}
-                </Button>
-              </div>
-            </Card>
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(handleSignIn)}
+                className="space-y-4"
+              >
+                <Card className="p-6">
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              id="email"
+                              placeholder="m@example.com"
+                              type="email"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input {...field} id="password" type="password" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Loading..." : "Sign in with Email"}
+                    </Button>
+                  </div>
+                </Card>
+              </form>
+            </Form>
           </TabsContent>
           <TabsContent value="sso">
             <div className="flex flex-col space-y-3">
