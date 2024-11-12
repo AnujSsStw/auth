@@ -90,8 +90,6 @@ Note: If using Docker, ensure you have the appropriate PostgreSQL driver configu
 
 The application should now be running on the configured port (default: 3000).
 
-// ... previous server setup content ...
-
 ## Web Application Setup
 
 1. Navigate to the web directory and create your environment file:
